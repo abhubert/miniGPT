@@ -3,12 +3,17 @@ import torch.nn as nn
 from .attention import CausalSelfAttention
 
 class FeedForward(nn.Module):
-    def __init__(self, config):
+    def __init__(self, 
+                 d_model:int,
+                 d_feedforward:int,
+                 dropout:float=0.1,
+                 bias:bool=True
+    ):
         super().__init__()
-        self.fc1 = nn.Linear(config.d_models, config.d_feedforward, bias=config.bias)
-        self.fc2 = nn.Linear(config.d_feedforward, config.d_models, bias=config.bias)
+        self.fc1 = nn.Linear(d_model, d_feedforward, bias=bias)
+        self.fc2 = nn.Linear(d_feedforward, d_model, bias=bias)
 
-        self.dropout = nn.Dropout(config.dropout)
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x:torch.Tensor) -> torch.Tensor:
 
@@ -20,12 +25,30 @@ class FeedForward(nn.Module):
         return x
 
 class TransformerBlock(nn.Module):
-    def __init__(self, config):
+    def __init__(self, 
+                 d_model:int,
+                 d_head:int,
+                 n_heads:int,
+                 d_feedforward:int,
+                 max_seq_len:int,
+                 dropout:float=0.1,
+                 bias:bool=True
+    ):
         super().__init__()
-        self.l1 = nn.LayerNorm(config.d_models)
-        self.attn = CausalSelfAttention(config=config)
-        self.l2 = nn.LayerNorm(config.d_models)
-        self.ff = FeedForward(config=config)
+        self.l1 = nn.LayerNorm(d_model)
+        self.attn = CausalSelfAttention(
+                                        n_heads=n_heads, 
+                                        d_head=d_head, 
+                                        d_model=d_model, 
+                                        bias=bias, 
+                                        max_seq_len=max_seq_len, 
+                                        dropout=dropout
+        )
+        self.l2 = nn.LayerNorm(d_model)
+        self.ff = FeedForward(d_model=d_model,
+                              d_feedforward=d_feedforward,
+                              dropout=dropout,
+                              bias=bias)
 
     def forward(self, x:torch.Tensor) -> torch.Tensor:
         #pre-norm

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 class GPTConfig: 
     vocab_size: int = 50257
     max_seq_len: int = 1024
-    d_models: int = 768
+    d_model: int = 768
     n_heads: int = 12
     n_layers: int = 12
     d_feedforward: int = 3072
@@ -13,5 +13,5 @@ class GPTConfig:
 
     @property
     def d_head(self):
-        assert self.d_models % self.n_heads == 0
-        return self.d_models // self.n_heads
+        assert self.d_model % self.n_heads == 0
+        return self.d_model // self.n_heads

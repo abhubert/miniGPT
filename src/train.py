@@ -191,7 +191,7 @@ if __name__ == "__main__":
     config = GPTConfig(
         vocab_size=len(tokenizer.vocab),
         max_seq_len=256,
-        d_models=384,
+        d_model=384,
         n_heads=6,
         n_layers=6,
         d_feedforward=1536,
@@ -199,7 +199,15 @@ if __name__ == "__main__":
         bias=False
     )
     
-    model = GPT(config)
+    model = GPT(
+        vocab_size=config.vocab_size,
+        d_model=config.d_model,
+        d_head=config.d_model // config.n_heads,
+        n_heads=config.n_heads,
+        d_feedforward=config.d_feedforward,
+        max_seq_len=config.max_seq_len,
+        n_layers=config.n_layers
+    )
     total_params = sum(p.numel() for p in model.parameters())
     print(f"\n Model parameters: {total_params:,}")
     

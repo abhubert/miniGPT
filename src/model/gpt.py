@@ -4,21 +4,43 @@ import torch.nn.functional as fn
 from .layers import *
 
 class GPT(nn.Module):
-    def __init__(self, config):
+    def __init__(
+                self, 
+                vocab_size: int,
+                d_model: int,
+                d_head: int,
+                n_heads: int,
+                d_feedforward: int,
+                max_seq_len: int,
+                n_layers:int,
+                dropout:float=0.1,
+                bias:bool=True
+    ):
         super().__init__()
-        self.config = config
 
-        self.token_embeddings = nn.Embedding(config.vocab_size, config.d_models)
-        self.position_embeddings = nn.Embedding(config.max_seq_len, config.d_models)
-        self.dropout = nn.Dropout(config.dropout)
+        self.vocab_size = vocab_size
+        self.d_model = d_model
+        self.max_seq_len = max_seq_len
+
+        self.token_embeddings = nn.Embedding(vocab_size, d_model)
+        self.position_embeddings = nn.Embedding(max_seq_len, d_model)
+        self.dropout = nn.Dropout(dropout)
 
         self.blocks = nn.ModuleList([
-            TransformerBlock(config) for _ in range(config.n_layers)
+            TransformerBlock(
+                d_model=d_model,
+                d_head=d_head,
+                n_heads=n_heads,
+                d_feedforward=d_feedforward,
+                max_seq_len=max_seq_len,
+                dropout=dropout,
+                bias=bias
+            ) for _ in range(n_layers)
         ])
 
-        self.ln_f = nn.LayerNorm(config.d_models)
+        self.ln_f = nn.LayerNorm(d_model)
         
-        self.lm_head = nn.Linear(config.d_models, config.vocab_size, bias=False)
+        self.lm_head = nn.Linear(d_model, vocab_size, bias=False)
 
         self.token_embeddings.weight = self.lm_head.weight
 
@@ -36,7 +58,7 @@ class GPT(nn.Module):
 
     def forward(self, idx, targets=None):
         B, T = idx.shape
-        assert T <= self.config.max_seq_len, f"Sequence Length {T} exceeds max {self.config.max_seq_len}"
+        assert T <= self.max_seq_len, f"Sequence Length {T} exceeds max {self.max_seq_len}"
 
         pos = torch.arange(0, T, dtype=torch.long, device=idx.device)
         token_embedding = self.token_embeddings(idx)
@@ -64,7 +86,7 @@ class GPT(nn.Module):
     def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
         for _ in range(max_new_tokens):
 
-            idx_cond = idx if idx.size(1) <= self.config.max_seq_len else idx[:, -self.config.max_seq_len:]
+            idx_cond = idx if idx.size(1) <= self.max_seq_len else idx[:, -self.max_seq_len:]
 
             logits, _ = self(idx_cond)
 
